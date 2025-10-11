@@ -1,0 +1,8 @@
+numpy
+sentence-transformers
+pandas
+scikit-learn
+umap-learn
+optuna
+matplotlib
+
