@@ -1,5 +1,15 @@
 # UMAP + Clustering con Optuna (Silhouette)
 
+
+puede correr este contenedor con Podman o Docker:
+git clone el repo en el podman 
+podman build . -t {Un nombre que quiera del contenedor}
+
+
+
+
+
+
 Este proyecto documenta nuestro proceso para la creación de una herramienta donde queremos **darle labels a textos grandes con control de granularidad**.  
 Está pensado para personas involucradas en **toma de decisiones basada en datos**, que buscan descubrir temas, categorías o patrones dentro de textos extensos sin necesidad de etiquetas previas.
 
