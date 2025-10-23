@@ -1,11 +1,15 @@
-FROM fedora:42
-
-RUN apt-get update && apt-get install -y python3 \ python3-pip
-
-RUN pip3 install 
-    
+FROM python:3.11-slim
 
 WORKDIR /app
 
-COPY requirements.txt /app/
+RUN pip install --no-cache-dir \
+    numpy \
+    sentence-transformers \
+    pandas \
+    scikit-learn \
+    umap-learn \
+    optuna \
+    matplotlib \
+    seaborn
 
+CMD ["python"]
