@@ -27,7 +27,7 @@
 ##  Installation Guide
 
 ###  Requirements
-- Docker or Podman (or any WSL to run the container)
+- Docker or Podman (or any Distro to run the container)
 - All dependencies listed in `requirements.txt`
 
 ### 📦 Setup Instructions
