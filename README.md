@@ -1,62 +1,70 @@
-# UMAP + Clustering con Optuna (Silhouette)
+# 📊 A Human–AI Collaborative Framework for Open Coding in Thematic Analysis
 
+## Project Description
 
-puede correr este contenedor con Podman o Docker:
-git clone el repo en el podman 
-podman build . -t {Un nombre que quiera del contenedor}
+> The objective is to create an `Augmented AI Tool` for people who is in charge of data driven desitions, this way instead of reading all of the transcripts in an interview, or all of the comments down the business page in google maps he uses this tool and see the bad and the good 
 
-
-
-
-
-
-Este proyecto documenta nuestro proceso para la creación de una herramienta donde queremos **darle labels a textos grandes con control de granularidad**.  
-Está pensado para personas involucradas en **toma de decisiones basada en datos**, que buscan descubrir temas, categorías o patrones dentro de textos extensos sin necesidad de etiquetas previas.
-
-El proyecto usa un dataset de prueba y lo **vectoriza con Sentence-Transformers**, luego bajamos a **2D con UMAP**, aplicamos **clustering con AgglomerativeClustering**, y finalmente **optimizamos los hiperparámetros con Optuna**.  
-Los logs de las ejecuciones que hicimos para el proceso de Optuna están en:  
-`Optuna Logs.txt`.
-
-Después de obtener los mejores clusters, generamos el **dendrograma**, pero faltan los **labels en las intersecciones**.  
-Esos labels se los pedimos a un **LLM local**, creado con **Ollama**, llamado `cal-state-words`.
-
-> Para correr la parte del notebook donde usamos el LLM para generar labels de las intersecciones del dendrograma necesitas tener **Ollama** instalado y cualquier modelo compatible.  
-> Nosotros usamos `cal-state-words`, pero puedes usar el que quieras (por ejemplo, `gemma3:1b`).  
-> Solo asegúrate de tener Ollama corriendo localmente.
->
-> ```bash
-> pip install ollama
-> ollama pull gemma3:1b
-> ```
+>We aim to use AI to augment the human capacity in the decision making progress not to replace it.
 
 ---
 
-### Archivos relevantes
-- Notebook principal: `Optuna_SilhoutteScore_C7 (1).ipynb`  
-- Logs de los estudios: `Optuna Logs.txt`  
-- Dataset de ejemplo: `palabras_50_sin_acentos.csv`  
-- Archivo de dependencias: `requirements.txt`  
-- README
+## 📂 Repository Structure
+- `data/`: Raw and processed datasets
+- - `Optuna Logs.txt`: Here we keep the logs of about 30 runs on optuna we did to see what are the best Hyperparameters on the models
+- - `palabras_50_sin_acentos.csv`: This is our dataset we use for the Dendogram-notebook
+- `notebooks/`: Jupyter Notebooks for data validation and analysis
+- - `Dendogram-notebook.ipynb`: This is the initial notebook, in here we use **Sentence-Transformers** to vectorize words, than we use **UMAP** to pass them into a 2D space, then we apply **Agglomerative Clustering**, we use **Optuna** to optimize hyperparameters, we then make the dendogram and we use an local LLM in **Ollama** to ask for the labels in the intersections. 
+- `Containerfile`: This is a containerfile for python and libraries.
+- `Modelfile`: This is a file that stores the LLM we created **cal-state_words** (only answers with 1 word to any prompt).
+- `Ollama.Dockerfile`: This is another containerfile for ollama and creating the cal-state_words LLM using the Modelfile
+- `docker-compose.yml`: Template to compose both containerfiles
+- `requirements.txt`: File with all the python libraries needed
+- `README.md`: This file
+
 
 ---
 
-## Crear y activar el environment (Windows)
+##  Installation Guide
 
-Para garantizar que el proyecto se ejecute igual en cualquier computadora, usamos un **entorno virtual (venv)** junto con el `requirements.txt`.
+###  Requirements
+- Docker or Podman (or any WSL to run the container)
+- All dependencies listed in `requirements.txt`
 
-```powershell
-# 1) Crear y activar entorno fijando python 3.10
-py -3.10 -m venv .venv
-.\.venv\Scripts\Activate.ps1
+### 📦 Setup Instructions
 
-# 2) Actualizar pip e instalar dependencias del requirements.txt
-python -m pip install --upgrade pip
-pip install -r requirements.txt
+1. **Clone the Repository**
+   ```bas
+   git clone https://github.com/HiramZ04/Cal-State-UMAP_Clustering.git
+   cd <your-repo-folder>
+2. **Build the Container using Docker or Podman**
 
-# 3) Registrar kernel para Jupyter
-python -m ipykernel install --user --name calstate-umap --display-name "CalState UMAP (venv)"
+   ```bash
+   # Using Docker:
+   docker compose build
+   docker compose up -d
 
-# 4) Abrir Jupyter Lab o en Notebook 
-jupyter lab
-# o
-jupyter notebook
+   # To Stop:
+   docker compose down
+   ```
+
+   ```bash
+   # Using Podman:
+   podman compose build
+   podman compose up -d
+   
+   # To Stop:
+   podman compose down
+   ```
+
+
+## Contributors
+
+We want to thank the following individuals who have contributed to this project:
+
+| Name | GitHub Username |
+|---|---|
+| Jesus A. Beltran - Advisor | [3eltran23](https://github.com/3eltran23) |
+| Hiram Zuniga | [HiramZ04](https://github.com/HiramZ04)  |
+| Sebastian Soto | [SebastianSoto17](https://github.com/SebastianSoto17)  |
+| Diego Hernandez | [wushang549](https://github.com/wushang549)  |
+
