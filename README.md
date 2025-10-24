@@ -40,20 +40,20 @@
 
    ```bash
    # Using Docker:
-   docker compose build
-   docker compose up -d
+   docker compose build  # Construye la imagen
+   docker compose up -d  # Construye el contenedor
 
    # To Stop:
-   docker compose down
+   docker compose down   # Detiene y elimina el contenedor (No la imagen)
    ```
 
    ```bash
    # Using Podman:
-   podman compose build
-   podman compose up -d
+   podman compose build  # Construye la imagen
+   podman compose up -d  # Construye el contenedor
    
    # To Stop:
-   podman compose down
+   podman compose down   # Detiene y elimina el contenedor (No la imagen)
    ```
 
 
