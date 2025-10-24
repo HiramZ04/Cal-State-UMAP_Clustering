@@ -67,4 +67,5 @@ We want to thank the following individuals who have contributed to this project:
 | Hiram Zuniga | [HiramZ04](https://github.com/HiramZ04)  |
 | Sebastian Soto | [SebastianSoto17](https://github.com/SebastianSoto17)  |
 | Diego Hernandez | [wushang549](https://github.com/wushang549)  |
+| Luis Bremer | [BernardoBremer](https://github.com/BernardoBremer)  |
 
