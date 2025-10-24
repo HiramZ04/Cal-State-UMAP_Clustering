@@ -5,4 +5,4 @@ scikit-learn
 umap-learn
 optuna
 matplotlib
-
+ollama

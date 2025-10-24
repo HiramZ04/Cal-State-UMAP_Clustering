@@ -10,6 +10,7 @@ RUN pip install --no-cache-dir \
     umap-learn \
     optuna \
     matplotlib \
-    seaborn
+    seaborn \
+    ollama
 
 CMD ["python"]
