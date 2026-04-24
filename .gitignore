@@ -1,0 +1,6 @@
+artifacts/*
+!artifacts/.gitkeep
+
+.ipynb_checkpoints/
+__pycache__/
+*.pyc
