@@ -108,6 +108,10 @@ frontend_data/book_cluster_map_views.html
 frontend_data/book_cluster_map_slider.html
 ```
 
+### `old_training_notebooks/`
+
+Older experimental notebooks kept as reference.
+
 ---
 
 ## Local Artifacts
