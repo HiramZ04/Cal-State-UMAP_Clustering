@@ -7,5 +7,7 @@ optuna
 matplotlib
 seaborn
 ollama
-plotly 
+plotly
 hdbscan
+pyarrow
+joblib
