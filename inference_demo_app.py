@@ -14,11 +14,13 @@ FRONTEND_DIR = ROOT_DIR / "frontend_data"
 EMBEDDING_MODEL_NAME = "sentence-transformers/all-MiniLM-L6-v2"
 
 
+# ============================================================
+# Load resources
+# ============================================================
+
 @st.cache_resource
 def load_embedding_model():
     return SentenceTransformer(EMBEDDING_MODEL_NAME)
-
-
 
 
 @st.cache_data
@@ -32,10 +34,39 @@ def load_data():
     df_points = pd.read_json(FRONTEND_DIR / "book_map_points.json")
     df_summary = pd.read_json(FRONTEND_DIR / "cluster_summary.json")
 
-    # ------------------------------------------------------------
-    # Ensure tone-view fields exist in df_points
-    # ------------------------------------------------------------
+    df_points["cluster_id"] = df_points["cluster_id"].astype(int)
+    df_summary["cluster_id"] = df_summary["cluster_id"].astype(int)
 
+    if "id" not in df_points.columns:
+        df_points["id"] = df_points.index
+
+    if "cluster_rank" not in df_points.columns:
+        df_points = df_points.sort_values(["cluster_id", "id"]).copy()
+        df_points["cluster_rank"] = (
+            df_points
+            .groupby("cluster_id")
+            .cumcount()
+            .add(1)
+        )
+
+    # ------------------------------------------------------------
+    # Cluster colors fallback
+    # ------------------------------------------------------------
+    if "cluster_color" not in df_points.columns and "cluster_color" in df_summary.columns:
+        df_points = df_points.merge(
+            df_summary[["cluster_id", "cluster_color"]],
+            on="cluster_id",
+            how="left"
+        )
+
+    if "cluster_color" not in df_points.columns:
+        df_points["cluster_color"] = "#64748B"
+
+    df_points["cluster_color"] = df_points["cluster_color"].fillna("#64748B")
+
+    # ------------------------------------------------------------
+    # Tone view fields
+    # ------------------------------------------------------------
     tone_palette = {
         "Dark": "#1F2937",
         "Inspiring": "#2563EB",
@@ -53,9 +84,6 @@ def load_data():
         "Reflective": "#8B5CF6",
         "Neutral": "#94A3B8",
     }
-
-    df_points["cluster_id"] = df_points["cluster_id"].astype(int)
-    df_summary["cluster_id"] = df_summary["cluster_id"].astype(int)
 
     df_summary["dominant_tone"] = (
         df_summary["top_tone"]
@@ -76,7 +104,6 @@ def load_data():
             "dominant_tone_color",
             "short_label",
             "cluster_name",
-            "cluster_color",
         ]
     ].copy()
 
@@ -91,32 +118,26 @@ def load_data():
     )
 
     df_points = df_points.merge(
-        tone_lookup[
-            [
-                "cluster_id",
-                "dominant_tone",
-                "dominant_tone_color",
-                "short_label",
-                "cluster_name",
-            ]
-        ],
+        tone_lookup,
         on="cluster_id",
         how="left",
     )
 
     df_points["dominant_tone"] = df_points["dominant_tone"].fillna("Unknown")
     df_points["dominant_tone_color"] = df_points["dominant_tone_color"].fillna("#94A3B8")
+
     df_points["short_label"] = df_points["short_label"].fillna(
         "Cluster " + df_points["cluster_id"].astype(str)
     )
+
     df_points["cluster_name"] = df_points["cluster_name"].fillna(
         "Cluster " + df_points["cluster_id"].astype(str)
     )
 
-
+    # ------------------------------------------------------------
+    # Normalize embeddings for cosine similarity
+    # ------------------------------------------------------------
     norms = np.linalg.norm(book_embeddings, axis=1)
-    embeddings_are_normalized = bool(np.median(norms) > 0.95 and np.median(norms) < 1.05)
-
     embeddings_norm = book_embeddings / np.clip(
         norms.reshape(-1, 1),
         1e-12,
@@ -126,12 +147,43 @@ def load_data():
     return {
         "book_embeddings": book_embeddings,
         "embeddings_norm": embeddings_norm,
-        "embeddings_are_normalized": embeddings_are_normalized,
         "df_books": df_books,
         "df_points": df_points,
         "df_summary": df_summary,
     }
 
+
+# ============================================================
+# Helpers
+# ============================================================
+
+def clean_value(x, fallback="Unknown"):
+    if pd.isna(x):
+        return fallback
+
+    x = str(x).strip()
+
+    if x == "" or x.lower() in ["nan", "none", "null", "unknown", "n/a", "na"]:
+        return fallback
+
+    return x
+
+
+def clear_query_state():
+    st.session_state.query_prompt = ""
+    st.session_state.last_result = None
+
+
+def get_cluster_summary(df_summary, cluster_id):
+    if cluster_id is None:
+        return None
+
+    row = df_summary[df_summary["cluster_id"].astype(int) == int(cluster_id)]
+
+    if row.empty:
+        return None
+
+    return row.iloc[0].to_dict()
 
 
 def show_tone_legend(df_points, books_per_cluster):
@@ -206,41 +258,12 @@ def show_tone_legend(df_points, books_per_cluster):
 
     html_parts.append("</div>")
 
-    chips_html = "".join(html_parts)
-
-    st.markdown(chips_html, unsafe_allow_html=True)
+    st.markdown("".join(html_parts), unsafe_allow_html=True)
 
 
-
-
-
-def clean_value(x, fallback="Unknown"):
-    if pd.isna(x):
-        return fallback
-
-    x = str(x).strip()
-
-    if x == "" or x.lower() in ["nan", "none", "null", "unknown", "n/a", "na"]:
-        return fallback
-
-    return x
-
-def clear_query_state():
-    st.session_state.query_prompt = ""
-    st.session_state.last_result = None
-
-
-def get_cluster_summary(df_summary, cluster_id):
-    if cluster_id is None:
-        return None
-
-    row = df_summary[df_summary["cluster_id"].astype(int) == int(cluster_id)]
-
-    if row.empty:
-        return None
-
-    return row.iloc[0].to_dict()
-
+# ============================================================
+# Recommendation logic
+# ============================================================
 
 def recommend_books(prompt, top_k, model, data):
     df_books = data["df_books"]
@@ -254,7 +277,7 @@ def recommend_books(prompt, top_k, model, data):
 
     similarities = embeddings_norm @ query_norm[0]
 
-    # Solo recomendar libros que sí pertenecen a un cluster válido
+    # Only recommend books assigned to valid clusters
     valid_candidate_mask = (
         df_books["cluster_id"].notna()
         & (df_books["cluster_id"] != -1)
@@ -279,7 +302,7 @@ def recommend_books(prompt, top_k, model, data):
 
     predicted_cluster = int(cluster_scores.index[0])
 
-    # Colocar el prompt cerca de sus libros recomendados
+    # Place the prompt near its closest recommended books
     weights = recommendations["similarity"].to_numpy()
     weights = weights - weights.min() + 1e-6
 
@@ -296,7 +319,18 @@ def recommend_books(prompt, top_k, model, data):
     return recommendations.reset_index(drop=True), query_point, cluster_scores
 
 
-def build_map(df_points, recommendations=None, query_point=None, predicted_cluster=None, books_per_cluster=150, color_mode="Semantic cluster"):
+# ============================================================
+# Plotly map
+# ============================================================
+
+def build_map(
+    df_points,
+    recommendations=None,
+    query_point=None,
+    predicted_cluster=None,
+    books_per_cluster=150,
+    color_mode="Semantic cluster",
+):
     df_visible = df_points[df_points["cluster_rank"] <= books_per_cluster].copy()
 
     if color_mode == "Dominant tone":
@@ -309,7 +343,7 @@ def build_map(df_points, recommendations=None, query_point=None, predicted_clust
 
     for color, cluster_id in zip(base_colors, df_visible["cluster_id"]):
         if color_mode == "Labeled overview":
-            base_size = 3.3
+            base_size = 3.2
         else:
             base_size = 4.5
 
@@ -342,11 +376,13 @@ def build_map(df_points, recommendations=None, query_point=None, predicted_clust
                     df_visible["category"].fillna("Unknown category").astype(str),
                     df_visible["tone"].fillna("Unknown tone").astype(str),
                     df_visible["cluster_id"].astype(str),
+                    df_visible["short_label"].fillna("Unknown theme").astype(str),
                 ],
                 axis=1,
             ),
             hovertemplate=(
                 "<b>%{customdata[0]}</b><br>"
+                "Theme: %{customdata[4]}<br>"
                 "Category: %{customdata[1]}<br>"
                 "Book tone: %{customdata[2]}<br>"
                 "Cluster: %{customdata[3]}"
@@ -395,19 +431,18 @@ def build_map(df_points, recommendations=None, query_point=None, predicted_clust
                 textposition="top center",
                 hovertemplate=(
                     "<b>Your Query</b><br>"
-                    f"{query_point['prompt'][:160]}"
+                    f"{query_point['prompt'][:180]}"
                     "<extra></extra>"
                 ),
                 name="Your Query",
             )
         )
 
-        # ------------------------------------------------------------
+    # ------------------------------------------------------------
     # Labeled overview annotations
     # ------------------------------------------------------------
-
     if color_mode == "Labeled overview":
-        max_labels = 12
+        max_labels = 10
 
         label_df = (
             df_visible
@@ -449,12 +484,8 @@ def build_map(df_points, recommendations=None, query_point=None, predicted_clust
                 ux = dx / norm
                 uy = dy / norm
 
-            # Offset local: empuja el label cerca del cluster,
-            # no hasta las esquinas del plot.
             label_x = row["x"] + ux * x_range * 0.105
             label_y = row["y"] + uy * y_range * 0.105
-
-            # Pequeño stagger para evitar que labels cercanos caigan igual
             label_y += ((idx % 3) - 1) * y_range * 0.018
 
             annotations.append(
@@ -476,7 +507,7 @@ def build_map(df_points, recommendations=None, query_point=None, predicted_clust
                         size=13,
                         color=row["cluster_color"],
                     ),
-                    bgcolor="rgba(255,255,255,0.80)",
+                    bgcolor="rgba(255,255,255,0.82)",
                     bordercolor="rgba(255,255,255,0)",
                     borderpad=2,
                 )
@@ -485,7 +516,7 @@ def build_map(df_points, recommendations=None, query_point=None, predicted_clust
         fig.update_layout(annotations=annotations)
 
     fig.update_layout(
-        height=780,
+        height=760,
         template="plotly_white",
         margin=dict(l=10, r=10, t=25, b=10),
         plot_bgcolor="white",
@@ -499,15 +530,25 @@ def build_map(df_points, recommendations=None, query_point=None, predicted_clust
             x=1,
         ),
         xaxis=dict(visible=False, showgrid=False, zeroline=False),
-        yaxis=dict(visible=False, showgrid=False, zeroline=False, scaleanchor="x", scaleratio=1),
+        yaxis=dict(
+            visible=False,
+            showgrid=False,
+            zeroline=False,
+            scaleanchor="x",
+            scaleratio=1,
+        ),
     )
 
     return fig
 
 
+# ============================================================
+# Streamlit app
+# ============================================================
+
 st.set_page_config(
     page_title="AI Book Explorer — Query Demo",
-    layout="wide"
+    layout="wide",
 )
 
 st.title("📚 AI Book Explorer — Local Query Demo")
@@ -531,6 +572,10 @@ DEFAULT_PROMPT = (
 if "query_prompt" not in st.session_state:
     st.session_state.query_prompt = DEFAULT_PROMPT
 
+if "last_result" not in st.session_state:
+    st.session_state.last_result = None
+
+
 with st.sidebar:
     st.header("Query Controls")
 
@@ -540,8 +585,21 @@ with st.sidebar:
         height=130,
     )
 
-    top_k = st.slider("Top recommendations", min_value=5, max_value=30, value=15, step=5)
-    books_per_cluster = st.slider("Books per cluster on map", min_value=20, max_value=500, value=150, step=10)
+    top_k = st.slider(
+        "Top recommendations",
+        min_value=5,
+        max_value=30,
+        value=15,
+        step=5,
+    )
+
+    books_per_cluster = st.slider(
+        "Books per cluster on map",
+        min_value=20,
+        max_value=500,
+        value=150,
+        step=10,
+    )
 
     color_mode = st.selectbox(
         "Map view",
@@ -553,16 +611,13 @@ with st.sidebar:
         index=0,
     )
 
-
     run_query = st.button("Run query", type="primary")
 
     st.button(
         "Clear query / reset map",
-        on_click=clear_query_state
+        on_click=clear_query_state,
     )
 
-if "last_result" not in st.session_state:
-    st.session_state.last_result = None
 
 if run_query:
     prompt = st.session_state.query_prompt
@@ -585,8 +640,15 @@ if run_query:
                 "cluster_scores": cluster_scores,
             }
 
+
+# ============================================================
+# Initial map view
+# ============================================================
+
 if st.session_state.last_result is None:
     st.info("Write a prompt in the sidebar and click **Run query**.")
+
+    st.subheader("Semantic Book Map")
 
     fig = build_map(
         df_points=df_points,
@@ -597,13 +659,17 @@ if st.session_state.last_result is None:
         color_mode=color_mode,
     )
 
-    st.subheader("Semantic Book Map")
     st.plotly_chart(fig, width="stretch")
 
     if color_mode == "Dominant tone":
         show_tone_legend(df_points, books_per_cluster)
 
     st.stop()
+
+
+# ============================================================
+# Query result view
+# ============================================================
 
 recommendations = st.session_state.last_result["recommendations"]
 query_point = st.session_state.last_result["query_point"]
@@ -613,6 +679,25 @@ predicted_cluster = query_point["predicted_cluster"]
 cluster_info = get_cluster_summary(df_summary, predicted_cluster)
 
 left_col, right_col = st.columns([2.2, 1])
+
+
+with left_col:
+    st.subheader("Query Position on Semantic Map")
+
+    fig = build_map(
+        df_points=df_points,
+        recommendations=recommendations,
+        query_point=query_point,
+        predicted_cluster=predicted_cluster,
+        books_per_cluster=books_per_cluster,
+        color_mode=color_mode,
+    )
+
+    st.plotly_chart(fig, width="stretch")
+
+    if color_mode == "Dominant tone":
+        show_tone_legend(df_points, books_per_cluster)
+
 
 with right_col:
     st.subheader("Predicted Cluster")
@@ -645,29 +730,13 @@ with right_col:
 
         description = clean_value(
             row.get("description_original_clean"),
-            clean_value(row.get("description_for_embedding"), "No description available.")
+            clean_value(row.get("description_for_embedding"), "No description available."),
         )
 
-        with st.expander(f"{i + 1}. {title}  ·  {similarity:.3f}"):
+        with st.expander(f"{i + 1}. {title} · {similarity:.3f}"):
             st.markdown(f"**Authors:** {authors}")
             st.markdown(f"**Category:** {category}")
             st.markdown(f"**Tone:** {tone}")
             st.markdown(f"**Cluster:** `{cluster_id}`")
             st.markdown("**Description:**")
             st.write(description)
-
-with left_col:
-    st.subheader("Query Position on Semantic Map")
-
-    fig = build_map(
-        df_points=df_points,
-        recommendations=recommendations,
-        query_point=query_point,
-        predicted_cluster=predicted_cluster,
-        books_per_cluster=books_per_cluster,
-        color_mode=color_mode,
-    )
-
-    st.plotly_chart(fig, use_container_width=True)
-    if color_mode == "Dominant tone":
-        show_tone_legend(df_points, books_per_cluster)
