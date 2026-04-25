@@ -11,3 +11,5 @@ plotly
 hdbscan
 pyarrow
 joblib
+streamlit
+streamlit-plotly-events
