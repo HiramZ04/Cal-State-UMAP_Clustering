@@ -7,6 +7,228 @@ import streamlit as st
 from sentence_transformers import SentenceTransformer
 
 
+# ============================================================
+# Visual style
+# ============================================================
+
+def inject_dark_academia_css():
+    st.markdown(
+        """
+        <style>
+        @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap');
+
+        :root {
+            --bg-main: #0f1511;
+            --bg-panel: #151b17;
+            --bg-panel-soft: #1b231d;
+            --gold: #d6b43c;
+            --gold-soft: #8c762b;
+            --ivory: #f3efe2;
+            --muted: #a9ad9d;
+            --green-border: rgba(214, 180, 60, 0.25);
+            --danger: #c94d48;
+        }
+
+        .stApp {
+            background:
+                radial-gradient(circle at 20% 10%, rgba(214, 180, 60, 0.08), transparent 28%),
+                radial-gradient(circle at 85% 30%, rgba(91, 111, 86, 0.18), transparent 32%),
+                linear-gradient(135deg, #0f1511 0%, #121a15 45%, #0b100d 100%);
+            color: var(--ivory);
+        }
+
+        header[data-testid="stHeader"] {
+            background: transparent !important;
+        }
+
+        section[data-testid="stSidebar"] {
+            background: linear-gradient(180deg, #151b17 0%, #101611 100%);
+            border-right: 1px solid var(--green-border);
+            color: var(--ivory);
+        }
+
+        section[data-testid="stSidebar"] p,
+        section[data-testid="stSidebar"] label,
+        section[data-testid="stSidebar"] textarea,
+        section[data-testid="stSidebar"] input,
+        section[data-testid="stSidebar"] button,
+        section[data-testid="stSidebar"] [data-testid="stMarkdownContainer"] {
+            color: var(--ivory);
+            font-family: Inter, sans-serif;
+        }
+
+        h1, h2, h3 {
+            font-family: "Cormorant Garamond", serif !important;
+            color: var(--ivory) !important;
+            letter-spacing: 0.02em;
+        }
+
+        h1 {
+            font-size: 3.3rem !important;
+            font-weight: 700 !important;
+            margin-bottom: 0.2rem !important;
+        }
+
+        h2 {
+            font-size: 2rem !important;
+            color: var(--gold) !important;
+        }
+
+        h3 {
+            font-size: 1.55rem !important;
+        }
+
+        p, label, textarea, input, button, select {
+            font-family: Inter, sans-serif;
+        }
+
+        div[data-testid="stMarkdownContainer"] {
+            font-family: Inter, sans-serif;
+        }
+
+        span[data-testid="stIconMaterial"],
+        span[class*="material"],
+        i[class*="material"] {
+            font-family: "Material Symbols Rounded", "Material Symbols Outlined", "Material Icons" !important;
+        }
+
+        .block-container {
+            padding-top: 1rem;
+            padding-left: 2.6rem;
+            padding-right: 2.6rem;
+            max-width: 1500px;
+        }
+
+        .book-hero {
+            border: 1px solid var(--green-border);
+            background:
+                linear-gradient(135deg, rgba(214,180,60,0.09), rgba(255,255,255,0.015)),
+                rgba(15, 21, 17, 0.72);
+            border-radius: 18px;
+            padding: 18px 26px;
+            margin-bottom: 18px;
+            box-shadow: 0 18px 55px rgba(0,0,0,0.32);
+        }
+
+        .book-brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 10px;
+            color: var(--gold);
+            font-weight: 700;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            font-size: 0.8rem;
+        }
+
+        .book-brand-mark {
+            width: 28px;
+            height: 28px;
+            background: var(--gold);
+            display: inline-block;
+            box-shadow: 8px 8px 0 rgba(48, 113, 131, 0.65),
+                        15px 15px 0 rgba(197, 61, 109, 0.65);
+        }
+
+        .book-hero-title {
+            font-family: "Cormorant Garamond", serif;
+            font-size: 2.9rem;
+            line-height: 0.98;
+            color: var(--ivory);
+            font-weight: 700;
+            margin: 0;
+        }
+
+        .book-hero-subtitle {
+            max-width: 820px;
+            color: var(--muted);
+            font-size: 0.92rem;
+            line-height: 1.55;
+            margin-top: 10px;
+        }
+
+        div[data-testid="stAlert"] {
+            background: rgba(214, 180, 60, 0.09);
+            border: 1px solid rgba(214, 180, 60, 0.24);
+            color: var(--ivory);
+            border-radius: 14px;
+        }
+
+        .stButton > button {
+            background: linear-gradient(135deg, #d6b43c 0%, #b99724 100%);
+            color: #12140f;
+            border: 1px solid rgba(214, 180, 60, 0.55);
+            border-radius: 10px;
+            font-weight: 800;
+            letter-spacing: 0.01em;
+            transition: 0.2s ease;
+        }
+
+        .stButton > button:hover {
+            background: #f0cf55;
+            color: #0f1511;
+            border-color: #f0cf55;
+            transform: translateY(-1px);
+        }
+
+        .stTextArea textarea,
+        .stSelectbox div[data-baseweb="select"] > div,
+        .stNumberInput input {
+            background-color: #101611 !important;
+            color: var(--ivory) !important;
+            border: 1px solid rgba(214, 180, 60, 0.35) !important;
+            border-radius: 10px !important;
+        }
+
+        .stSlider [data-baseweb="slider"] div {
+            color: var(--gold);
+        }
+
+        div[data-testid="stExpander"] {
+            background: rgba(21, 27, 23, 0.92);
+            border: 1px solid rgba(214, 180, 60, 0.2);
+            border-radius: 14px;
+            overflow: hidden;
+        }
+
+        div[data-testid="stExpander"] summary {
+            color: var(--ivory);
+            font-weight: 700;
+        }
+
+        .stMarkdown code {
+            background: rgba(214, 180, 60, 0.13);
+            color: var(--gold);
+            border-radius: 6px;
+            padding: 2px 6px;
+        }
+
+        .element-container:has(.js-plotly-plot) {
+            border: 1px solid rgba(214, 180, 60, 0.25);
+            background: rgba(13, 18, 15, 0.86);
+            border-radius: 18px;
+            padding: 10px;
+            box-shadow: 0 24px 80px rgba(0,0,0,0.32);
+        }
+
+        .stCaptionContainer, .stCaptionContainer p {
+            color: var(--muted) !important;
+        }
+
+        hr {
+            border-color: rgba(214, 180, 60, 0.22);
+        }
+        </style>
+        """,
+        unsafe_allow_html=True,
+    )
+
+
+# ============================================================
+# Paths and constants
+# ============================================================
+
 ROOT_DIR = Path(__file__).resolve().parent
 ARTIFACTS_DIR = ROOT_DIR / "artifacts"
 FRONTEND_DIR = ROOT_DIR / "frontend_data"
@@ -49,9 +271,6 @@ def load_data():
             .add(1)
         )
 
-    # ------------------------------------------------------------
-    # Cluster colors fallback
-    # ------------------------------------------------------------
     if "cluster_color" not in df_points.columns and "cluster_color" in df_summary.columns:
         df_points = df_points.merge(
             df_summary[["cluster_id", "cluster_color"]],
@@ -64,9 +283,6 @@ def load_data():
 
     df_points["cluster_color"] = df_points["cluster_color"].fillna("#64748B")
 
-    # ------------------------------------------------------------
-    # Tone view fields
-    # ------------------------------------------------------------
     tone_palette = {
         "Dark": "#1F2937",
         "Inspiring": "#2563EB",
@@ -134,9 +350,6 @@ def load_data():
         "Cluster " + df_points["cluster_id"].astype(str)
     )
 
-    # ------------------------------------------------------------
-    # Normalize embeddings for cosine similarity
-    # ------------------------------------------------------------
     norms = np.linalg.norm(book_embeddings, axis=1)
     embeddings_norm = book_embeddings / np.clip(
         norms.reshape(-1, 1),
@@ -210,7 +423,7 @@ def show_tone_legend(df_points, books_per_cluster):
         'align-items:center;'
         'flex-wrap:wrap;'
         'gap:8px;'
-        'margin-top:-8px;'
+        'margin-top:8px;'
         'margin-bottom:12px;'
         '">'
     )
@@ -219,7 +432,7 @@ def show_tone_legend(df_points, books_per_cluster):
         '<span style="'
         'font-size:14px;'
         'font-weight:800;'
-        'color:#1f3556;'
+        'color:#d6b43c;'
         'margin-right:8px;'
         'white-space:nowrap;'
         '">'
@@ -239,8 +452,9 @@ def show_tone_legend(df_points, books_per_cluster):
             f'gap:6px;'
             f'padding:6px 10px;'
             f'border-radius:999px;'
-            f'background:#f1f5f9;'
-            f'color:#1f3556;'
+            f'background:rgba(15,21,17,0.85);'
+            f'border:1px solid rgba(214,180,60,0.24);'
+            f'color:#f3efe2;'
             f'font-size:12px;'
             f'font-weight:700;'
             f'white-space:nowrap;'
@@ -277,7 +491,6 @@ def recommend_books(prompt, top_k, model, data):
 
     similarities = embeddings_norm @ query_norm[0]
 
-    # Only recommend books assigned to valid clusters
     valid_candidate_mask = (
         df_books["cluster_id"].notna()
         & (df_books["cluster_id"] != -1)
@@ -302,7 +515,6 @@ def recommend_books(prompt, top_k, model, data):
 
     predicted_cluster = int(cluster_scores.index[0])
 
-    # Place the prompt near its closest recommended books
     weights = recommendations["similarity"].to_numpy()
     weights = weights - weights.min() + 1e-6
 
@@ -389,6 +601,7 @@ def build_map(
                 "<extra></extra>"
             ),
             name="Books",
+            showlegend=False,
         )
     )
 
@@ -412,6 +625,7 @@ def build_map(
                 text=recs_on_map["title_clean"].fillna("Recommended book"),
                 hovertemplate="<b>%{text}</b><br>Recommended book<extra></extra>",
                 name="Top recommendations",
+                showlegend=False,
             )
         )
 
@@ -435,12 +649,10 @@ def build_map(
                     "<extra></extra>"
                 ),
                 name="Your Query",
+                showlegend=False,
             )
         )
 
-    # ------------------------------------------------------------
-    # Labeled overview annotations
-    # ------------------------------------------------------------
     if color_mode == "Labeled overview":
         max_labels = 10
 
@@ -502,33 +714,58 @@ def build_map(
                     showarrow=True,
                     arrowhead=0,
                     arrowwidth=1,
-                    arrowcolor="rgba(60, 70, 90, 0.55)",
+                    arrowcolor="rgba(214, 180, 60, 0.42)",
                     font=dict(
                         size=13,
                         color=row["cluster_color"],
+                        family="Inter",
                     ),
-                    bgcolor="rgba(255,255,255,0.82)",
-                    bordercolor="rgba(255,255,255,0)",
+                    bgcolor="rgba(15,21,17,0.88)",
+                    bordercolor="rgba(214,180,60,0.35)",
                     borderpad=2,
                 )
             )
 
         fig.update_layout(annotations=annotations)
 
-    fig.update_layout(
-        height=760,
-        template="plotly_white",
-        margin=dict(l=10, r=10, t=25, b=10),
-        plot_bgcolor="white",
-        paper_bgcolor="white",
-        showlegend=True,
-        legend=dict(
-            orientation="h",
+    existing_annotations = list(fig.layout.annotations) if fig.layout.annotations else []
+
+    existing_annotations.append(
+        dict(
+            x=0.025,
+            y=0.035,
+            xref="paper",
+            yref="paper",
+            text="<span style='color:#c94d48'>●</span> <b>Books</b>",
+            showarrow=False,
+            xanchor="left",
             yanchor="bottom",
-            y=1.01,
-            xanchor="right",
-            x=1,
+            font=dict(
+                color="#d6b43c",
+                size=12,
+                family="Inter",
+            ),
+            bgcolor="rgba(15,21,17,0.72)",
+            bordercolor="rgba(214,180,60,0.28)",
+            borderwidth=1,
+            borderpad=5,
+        )
+    )
+
+    fig.update_layout(
+        height=840,
+        template=None,
+        margin=dict(l=10, r=10, t=25, b=10),
+        plot_bgcolor="#111812",
+        paper_bgcolor="#111812",
+        font=dict(color="#f3efe2", family="Inter"),
+        hoverlabel=dict(
+            bgcolor="#151b17",
+            bordercolor="#d6b43c",
+            font=dict(color="#f3efe2", family="Inter"),
         ),
+        showlegend=False,
+        annotations=existing_annotations,
         xaxis=dict(visible=False, showgrid=False, zeroline=False),
         yaxis=dict(
             visible=False,
@@ -549,13 +786,26 @@ def build_map(
 st.set_page_config(
     page_title="AI Book Explorer — Query Demo",
     layout="wide",
+    initial_sidebar_state="expanded",
 )
 
-st.title("📚 AI Book Explorer — Local Query Demo")
+inject_dark_academia_css()
 
-st.caption(
-    "Type a prompt, embed it locally, retrieve similar books, infer the nearest semantic cluster, "
-    "and place the query on the UMAP book map."
+st.markdown(
+    """
+    <div class="book-hero">
+        <div class="book-brand">
+            <span class="book-brand-mark"></span>
+            AI Book Explorer
+        </div>
+        <h1 class="book-hero-title">Deciphering the<br>Literary Genome</h1>
+        <div class="book-hero-subtitle">
+            Type a prompt, embed it locally, retrieve similar books, infer the nearest semantic cluster,
+            and place the query inside the UMAP book map.
+        </div>
+    </div>
+    """,
+    unsafe_allow_html=True,
 )
 
 data = load_data()
@@ -582,7 +832,7 @@ with st.sidebar:
     prompt = st.text_area(
         "User prompt",
         key="query_prompt",
-        height=130,
+        height=180,
     )
 
     top_k = st.slider(
@@ -646,9 +896,7 @@ if run_query:
 # ============================================================
 
 if st.session_state.last_result is None:
-    st.info("Write a prompt in the sidebar and click **Run query**.")
-
-    st.subheader("Semantic Book Map")
+    st.subheader("Semantic Embedding Space")
 
     fig = build_map(
         df_points=df_points,
@@ -682,7 +930,7 @@ left_col, right_col = st.columns([2.2, 1])
 
 
 with left_col:
-    st.subheader("Query Position on Semantic Map")
+    st.subheader("Query Position in the Literary Space")
 
     fig = build_map(
         df_points=df_points,
